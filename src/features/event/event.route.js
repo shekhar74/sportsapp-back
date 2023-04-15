@@ -1,6 +1,7 @@
 const express = require("express");
 const event = express.Router();
 const eventModel = require("./event.schema");
+const userModel=require("../user/user.schema")
 const auth = require("../../middleware/auth");
 const jwt = require("jsonwebtoken");
 
@@ -76,12 +77,68 @@ event.post("/:id/join", auth, async (req, res) => {
         .status(400)
         .json({ msg: "You have already joined this event" });
     }
+    else if (event.requests.includes(req.user.id)) {
+      return res
+        .status(400)
+        .json({ msg: "You have already requested to join this event" });
+    }
     if (event.players.length >= event.maxPlayers) {
       return res.status(400).json({ msg: "Event is already full" });
     }
     event.requests.push(req.user.id);
     await event.save();
     res.json({ msg: "Request to join event sent" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+// Organizer accept or reject request to join event id of Event and userId of participant with body as true
+event.put("/:id/requests/:userId", auth, async (req, res) => {
+  try {
+    const event = await eventModel.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ msg: "Event not found" });
+    }
+    if (event.organizer.toString() !== req.user.id) {
+      return res.status(401).json({ msg: "Not authorized" });
+    }
+    const index = event.requests.indexOf(req.params.userId);
+    if (index === -1) {
+      return res.status(404).json({ msg: "Request not found" });
+    }
+    const accepted = req.body.accepted === "true";
+    if (accepted) {
+      if (event.players.length >= event.maxPlayers) {
+        return res.status(400).json({ msg: "Event is already full" });
+      }
+      event.players.push(req.params.userId);
+      event.accepted.push(req.params.userId)
+    }
+    event.requests.splice(index, 1);
+    event.rejected.push(req.params.userId)
+    await event.save();
+    res.json({ msg: accepted ? "Request accepted" : "Request rejected" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get players of an Event ID
+event.get("/:id/players", auth, async (req, res) => {
+  try {
+    const event = await eventModel.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ msg: "Event not found" });
+    }
+    if (event.organizer.toString() !== req.user.id &&!event.players.includes(req.user.id))
+    {
+      return res.status(401).json({ msg: "Not authorized" });
+    }
+    const players = await userModel.find({ _id: { $in: event.players } },"username");
+    res.json(players);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
