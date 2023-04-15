@@ -6,14 +6,14 @@ const connect=require("./connect/connect")
 
 // imported Routes
 const users=require("./features/user/user.route")
-
+const event=require("./features/event/event.route")
 
 app.use(express.json());
 app.use(cors({origin:"*"}))
 
 //Routes used here
 app.use("/user",users)
-
+app.use("/event",event)
 
 
 //Homepage

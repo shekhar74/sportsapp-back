@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 function auth(req, res, next) {
-  const token = req.header('x-auth-token');
+  const token = req.header('auth-token');
   // Check if token exists
   if (!token) {
     return res.status(401).json({ msg: 'No token, authorization denied' });
@@ -12,6 +12,7 @@ function auth(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Add user from payload
+    // console.log(decoded,"decoded data")
     req.user = decoded.user;
     next();
   } catch (err) {
