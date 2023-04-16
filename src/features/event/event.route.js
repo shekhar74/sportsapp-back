@@ -33,7 +33,7 @@ event.get("/organize",auth ,async(req, res) => {
 
 // Create a new event
 event.post("/create", auth, async (req, res) => {
-  const { name, description, date, time, maxPlayers } = req.body;
+  const { name, description, date, time, maxPlayers ,requirements} = req.body;
 
   try {
     const event = await eventModel.create({
@@ -42,6 +42,7 @@ event.post("/create", auth, async (req, res) => {
       date,
       time,
       maxPlayers,
+      requirements,
       organizer: req.user.id,
     });
 
