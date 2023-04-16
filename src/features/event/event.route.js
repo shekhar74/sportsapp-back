@@ -17,6 +17,20 @@ event.get("/eventcheck",auth ,async(req, res) => {
         }
     });
 
+// Get events that i organize
+event.get("/organize",auth ,async(req, res) => {
+  try {
+      const events = await eventModel.find({  organizer: req.user.id  }).populate(['requests',"organizer"]);
+      if (!event) {
+        return res.status(404).json({ msg: "Event not found" });
+      }
+      res.json(events);
+      } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+      }
+  });
+
 // Create a new event
 event.post("/create", auth, async (req, res) => {
   const { name, description, date, time, maxPlayers } = req.body;
@@ -58,7 +72,7 @@ event.get("/:id", async (req, res) => {
     if (!event) {
       return res.status(404).json({ msg: "Event not found" });
     }
-    res.json(event);
+    res.json([event]);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
@@ -90,7 +104,7 @@ event.post("/:id/join", auth, async (req, res) => {
     res.json({ msg: "Request to join event sent" });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).send({msg:"Server error"});
   }
 });
 
@@ -119,7 +133,7 @@ event.put("/:id/requests/:userId", auth, async (req, res) => {
     event.requests.splice(index, 1);
     event.rejected.push(req.params.userId)
     await event.save();
-    res.json({ msg: accepted ? "Request accepted" : "Request rejected" });
+    res.json({ data:event,msg: accepted ? "Request accepted" : "Request rejected" });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
